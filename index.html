@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JobHunter</title>
+<style>
+  :root {
+    --bg: #F3F2EF;
+    --card: #FFFFFF;
+    --line: #E0DFDC;
+    --brand: #0A66C2;
+    --brand-dark: #004182;
+    --ink: #1D2226;
+    --muted: rgba(0,0,0,.6);
+    --faint: rgba(0,0,0,.45);
+    --green: #057642;
+    --amber: #915907;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+    margin: 0; background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.5;
+  }
+
+  /* ---- top bar ---- */
+  .topbar { position: sticky; top: 0; z-index: 10; background: var(--card); box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
+  .topbar-inner { max-width: 900px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; gap: 8px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; letter-spacing: -.02em; margin-right: 24px; padding: 10px 0; }
+  .brand-mark { width: 34px; height: 34px; border-radius: 6px; background: var(--brand); color: #fff; display: grid; place-items: center; font-size: 15px; font-weight: 800; letter-spacing: 0; }
+  nav { display: flex; margin-left: auto; }
+  nav button {
+    appearance: none; border: none; background: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 8px 18px 6px; color: var(--faint); font-size: 12px; position: relative;
+  }
+  nav button svg { width: 22px; height: 22px; }
+  nav button:hover { color: var(--ink); }
+  nav button.active { color: var(--ink); }
+  nav button.active::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 0; height: 2px; background: var(--ink); border-radius: 2px 2px 0 0; }
+
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 16px; }
+  section { display: none; } section.active { display: block; }
+
+  /* ---- cards ---- */
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: 0 0 0 1px rgba(0,0,0,.08); padding: 20px 24px; margin-bottom: 16px; }
+  .card h2 { font-size: 16px; font-weight: 600; margin: 0 0 2px; }
+  .card .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+
+  /* ---- forms ---- */
+  label { display: block; margin: 14px 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  input[type=text], input:not([type]), select, textarea {
+    width: 100%; padding: 8px 12px; font-size: 14px; font-family: inherit; color: var(--ink);
+    border: 1px solid rgba(0,0,0,.55); border-radius: 4px; background: var(--card);
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 2px solid var(--brand); outline-offset: 1px;
+  }
+  textarea { min-height: 170px; resize: vertical; }
+  ::placeholder { color: var(--faint); }
+
+  /* ---- buttons: LinkedIn pill ---- */
+  .btn {
+    appearance: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600;
+    border-radius: 24px; padding: 7px 20px; transition: background .15s, box-shadow .15s;
+  }
+  .btn-primary { background: var(--brand); color: #fff; border: none; }
+  .btn-primary:hover { background: var(--brand-dark); }
+  .btn-primary:disabled { background: rgba(0,0,0,.3); cursor: default; }
+  .btn-outline { background: none; color: var(--brand); border: 1px solid var(--brand); }
+  .btn-outline:hover { background: rgba(112,181,249,.15); box-shadow: inset 0 0 0 1px var(--brand); }
+  .btn-ghost { background: none; border: none; color: var(--muted); font-weight: 600; border-radius: 4px; padding: 6px 10px; }
+  .btn-ghost:hover { background: rgba(0,0,0,.06); color: var(--ink); }
+  .actions { margin-top: 18px; display: flex; align-items: center; gap: 10px; }
+  .ok { color: var(--green); font-size: 13px; font-weight: 600; }
+
+  /* ---- jobs ---- */
+  .jobs-toolbar { display: flex; align-items: center; gap: 16px; }
+  .stats { display: flex; gap: 0; margin-left: auto; }
+  .stat { text-align: center; padding: 0 18px; border-left: 1px solid var(--line); }
+  .stat:first-child { border-left: none; }
+  .stat b { display: block; font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .stat span { font-size: 12px; color: var(--muted); }
+  .stat.st-applied b { color: var(--brand); }
+  .stat.st-interested b { color: var(--amber); }
+  .stat.st-interviewing b { color: #5B2E91; }
+  .stat.st-offer b { color: var(--green); }
+  .warn { background: #FDF3E7; box-shadow: 0 0 0 1px rgba(145,89,7,.25); color: var(--amber); padding: 10px 14px; border-radius: var(--radius); margin: 12px 0 0; font-size: 13px; }
+
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .seg button { appearance: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
+    padding: 5px 14px; border-radius: 24px; background: none; color: var(--muted);
+    border: 1px solid var(--line); transition: background .15s, color .15s, border-color .15s; }
+  .seg button:hover { background: rgba(0,0,0,.05); color: var(--ink); }
+  .seg button.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .seg button span { opacity: .65; font-weight: 500; margin-left: 2px; }
+
+  .job-list { padding: 0; }
+  .job-row { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-top: 1px solid var(--line); }
+  .job-row:first-child { border-top: none; }
+  .job-main { min-width: 0; flex: 1; }
+  .job-title { font-size: 15px; font-weight: 600; color: var(--brand); text-decoration: none; }
+  .job-title:hover { text-decoration: underline; }
+  .job-company { color: var(--ink); font-size: 13px; margin-top: 2px; }
+  .job-location { color: var(--muted); font-size: 13px; }
+  .jd-btn { padding: 2px 8px; font-size: 12px; }
+  .jd-btn.open { background: rgba(10,102,194,.1); color: var(--brand); }
+
+  /* JD 阅读面板：右侧停靠，位置固定，列表在旁边照常能用 */
+  #jd-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 460px; z-index: 60;
+    display: flex; flex-direction: column; background: var(--card);
+    border-left: 1px solid var(--line); box-shadow: -8px 0 32px rgba(0,0,0,.10);
+    transform: translateX(100%); visibility: hidden; transition: transform .18s ease, visibility .18s; }
+  #jd-panel.open { transform: none; visibility: visible; }
+  /* 面板打开时把页面挤窄，而不是盖住列表——右边的状态下拉还得能点 */
+  body.jd-open { padding-right: 460px; }
+  body.jd-open .topbar { padding-right: 0; }
+  .jd-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--line); }
+  .jd-head h3 { margin: 0 40px 0 0; font-size: 17px; font-weight: 600; line-height: 1.3; }
+  .jd-head .co { margin-top: 4px; font-size: 13.5px; }
+  .jd-head .loc { font-size: 13px; color: var(--muted); }
+  .jd-head .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--faint); }
+  .jd-head a { margin-left: auto; color: var(--brand); font-weight: 600; text-decoration: none; }
+  .jd-head a:hover { text-decoration: underline; }
+  .jd-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; line-height: 1;
+    display: grid; place-items: center; border: none; border-radius: 50%; background: none;
+    color: var(--muted); font-size: 20px; cursor: pointer; }
+  .jd-close:hover { background: rgba(0,0,0,.06); color: var(--ink); }
+  .jd-body { flex: 1; overflow-y: auto; padding: 16px 20px 32px; font-size: 13.5px; line-height: 1.7; }
+  .jd-body p { margin: 0 0 10px; }
+  .jd-body ul { margin: 0 0 12px; padding-left: 18px; }
+  .jd-body li { margin: 3px 0; }
+  .jd-body .loading { color: var(--faint); }
+  @media (max-width: 900px) {
+    /* 窄屏挤不出并排空间，改成从下方升起的抽屉 */
+    #jd-panel { top: auto; width: 100%; max-height: 78vh; border-left: none;
+      border-top: 1px solid var(--line); border-radius: var(--radius) var(--radius) 0 0;
+      transform: translateY(100%); box-shadow: 0 -8px 32px rgba(0,0,0,.14); }
+    body.jd-open { padding-right: 0; }
+  }
+  .job-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 12px; color: var(--faint); }
+
+  /* 技能匹配：JD 里点到的技能对着履历分成命中/缺失，默认只显示比例，点开才铺开 */
+  .sk-chip { border: none; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    background: rgba(0,0,0,.06); color: var(--muted); padding: 2px 9px; border-radius: 10px; }
+  .sk-chip:hover { background: rgba(0,0,0,.1); color: var(--ink); }
+  .sk-chip b { color: var(--green); }
+  .sk-chip.lo b { color: #B24020; }
+  .sk-detail { margin-top: 8px; padding: 10px 12px; background: rgba(0,0,0,.03); border-radius: 6px; }
+  .sk-detail .lbl { font-size: 11px; font-weight: 700; color: var(--faint); letter-spacing: .04em; margin: 8px 0 5px; }
+  .sk-detail .lbl:first-child { margin-top: 0; }
+  .sks { display: flex; flex-wrap: wrap; gap: 5px; }
+  .sk { font-size: 12px; padding: 2px 8px; border-radius: 3px; }
+  .sk.have { background: rgba(5,118,66,.12); color: var(--green); }
+  .sk.miss { background: rgba(178,64,32,.1); color: #B24020; }
+
+  /* 技能缺口：生成后列出 JD 要而履历没有的，让用户补真实经历，不是编 */
+  .gap { margin-top: 16px; padding: 14px 16px; border-radius: var(--radius);
+    background: #FDF3E7; box-shadow: 0 0 0 1px rgba(145,89,7,.25); }
+  .gap summary { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .gap p { margin: 8px 0 10px; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .gap-picks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gap-picks label { display: inline-flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;
+    font-size: 12.5px; font-weight: 500; background: var(--card);
+    border: 1px solid var(--line); border-radius: 4px; padding: 3px 9px; }
+  .gap-picks input { margin: 0; }
+  .gap textarea { min-height: 70px; margin-top: 10px; font-size: 13px; }
+  .draft-row { border: 1px solid var(--line); border-left: 3px solid var(--line);
+    border-radius: 4px; padding: 8px 10px; margin-top: 8px; font-size: 13px; }
+  .draft-row.approved { border-left-color: var(--green); background: rgba(5,118,66,.05); }
+  .draft-row textarea { min-height: 48px; margin-top: 6px; }
+  .draft-row .actions { margin-top: 6px; }
+  .card h3 { font-size: 14px; margin: 18px 0 8px; }
+  .pf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+  .pf-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; margin-top: 8px; }
+  .pf-card textarea { min-height: 80px; margin-top: 8px; }
+  .pf-card .actions { margin-top: 8px; }
+  label.pf-field { display: flex; flex-direction: column; gap: 3px; margin: 0;
+    font-size: 12px; font-weight: 500; color: var(--muted); }
+  .pf-card label.pf-field:has(textarea) { margin-top: 8px; }
+  #pf-skills { margin-bottom: 8px; }
+  .sk-x { border: 0; background: none; color: inherit; cursor: pointer;
+    padding: 0 0 0 4px; font-size: 12px; line-height: 1; font-family: inherit; }
+  .save-menu { position: relative; display: inline-block; }
+  .save-menu summary { list-style: none; cursor: pointer; }
+  .save-menu summary::-webkit-details-marker { display: none; }
+  .save-opts { position: absolute; top: 100%; left: 0; z-index: 10; margin-top: 4px;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: 0 4px 12px rgba(0,0,0,.12); min-width: 130px; overflow: hidden; }
+  .save-opts button { display: block; width: 100%; text-align: left; border: 0;
+    background: none; padding: 8px 12px; font-size: 13px; cursor: pointer; }
+  .save-opts button:hover { background: rgba(0,0,0,.05); }
+  .donate { text-align: center; padding: 4px 16px 32px; color: var(--muted); font-size: 13px; }
+  .donate-codes { display: flex; justify-content: center; gap: 24px; margin-top: 12px; }
+  .donate-codes figure { margin: 0; }
+  .donate-codes img { width: 170px; max-width: 40vw; border-radius: 8px; border: 1px solid var(--line); }
+  .donate-codes figcaption { margin-top: 4px; font-size: 12px; }
+  .doc-toggle .btn-outline.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+  /* 生成后校验：查"不该变的变没变"，纯比对，和 ATS 评分那套（要调模型）是两回事 */
+  .verify { margin-top: 12px; padding: 12px 16px; border-radius: var(--radius); }
+  .verify.good { background: #EAF5EE; box-shadow: 0 0 0 1px rgba(5,118,66,.25); }
+  .verify.bad { background: #FDF3E7; box-shadow: 0 0 0 1px rgba(145,89,7,.25); }
+  .v-row { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; padding: 2px 0; }
+  .v-row span { font-weight: 700; }
+  .v-row.ok span { color: var(--green); }
+  .v-row.no span { color: #B24020; }
+  .v-row b { font-weight: 600; white-space: nowrap; }
+  .v-row i { font-style: normal; color: var(--muted); }
+  .v-added { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,.12); }
+  .v-added .sks { margin: 7px 0; }
+  .v-added p { margin: 0 0 10px; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .v-dropped { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,.12);
+    font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .v-dropped .sks { margin: 7px 0; }
+  .v-dropped .sk { background: rgba(0,0,0,.06); color: var(--muted); }
+  .badge { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 3px; letter-spacing: .02em; }
+  .badge-seek { background: rgba(230,2,120,.09); color: #B7005F; }
+  .badge-linkedin { background: rgba(10,102,194,.1); color: var(--brand); }
+  .badge-manual { background: rgba(0,0,0,.07); color: var(--muted); }
+  .status-select { width: auto; border: none; border-radius: 24px; font-size: 13px; font-weight: 600; padding: 5px 26px 5px 12px; cursor: pointer;
+    background: rgba(0,0,0,.06) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" fill="none" stroke="black" stroke-width="1.5"/></svg>') no-repeat right 10px center;
+    appearance: none; -webkit-appearance: none; }
+  .status-select.applied { background-color: rgba(10,102,194,.1); color: var(--brand); }
+  .status-select.interested { background-color: rgba(145,89,7,.12); color: var(--amber); }
+  .status-select.interviewing { background-color: rgba(102,51,153,.12); color: #5B2E91; }
+  .status-select.offer { background-color: rgba(5,118,66,.14); color: var(--green); }
+  .status-select.rejected { background-color: rgba(178,64,32,.1); color: #B24020; }
+  .status-select.ignored { color: var(--faint); }
+  .status-select.new { color: var(--ink); }
+
+  .note { width: 100%; margin-top: 6px; min-height: 0; height: 30px; overflow: hidden; resize: none;
+    font-size: 12.5px; line-height: 1.45; padding: 5px 8px; border-radius: 4px;
+    border: 1px solid transparent; background: rgba(0,0,0,.03); color: var(--ink);
+    transition: height .12s, background .12s, border-color .12s; }
+  .note::placeholder { color: var(--faint); }
+  .note:hover { background: rgba(0,0,0,.055); }
+  .note:focus { background: var(--card); border-color: var(--brand); resize: vertical; }
+  .note.filled { background: #FFF8E6; height: 48px; }   /* 有内容时露两行，不切在半行上 */
+  .note:focus { height: 90px; overflow: auto; }
+  .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty svg { width: 48px; height: 48px; color: var(--faint); margin-bottom: 8px; }
+  .k-file { margin-top: 6px; font-size: 12px; color: var(--muted); }
+  details summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+  details[open] summary { margin-bottom: 4px; }
+
+  /* ---- generation: paper preview ---- */
+  .gen-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+  .gen-controls .field { flex: 1; min-width: 260px; }
+  .gen-controls .field label { margin-top: 0; }
+  .doc-toggle { display: flex; gap: 8px; align-items: center; margin-top: 16px; }
+  #preview {
+    background: var(--card); max-width: 760px; margin: 20px auto 0; min-height: 340px;
+    border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.12);
+  }
+  #preview:empty::before { content: "生成后的文档会以纸张形式显示在这里，可直接点击编辑"; color: var(--faint); display: block; text-align: center; padding-top: 120px; font-size: 13px; }
+  #preview[contenteditable] { outline: none; }
+
+  /* ---- CV 模板 ----
+     四套排版复刻 Jake's Resume / Awesome-CV / Harshibar / Madrid。
+     只换 CSS，DOM 结构完全一致：单栏 + h1/h2/h3/p/ul，无表格多栏图标页眉。
+     ponytail: letter-spacing 一律 ≤.08em —— 字距过大时 PDF 抽取器会在字母间插空格，"SKILLS" 会被解析成 "S K I L L S"。
+     同理不用 font-variant-caps: small-caps（合成小型大写在 PDF 里会拆字），统一用 uppercase + 缩小字号模拟。
+     font-variant-ligatures: none —— 禁掉 fi/fl 连字，否则打印出的 PDF 里 "workflow" 是 U+FB02，ATS 搜不到。 */
+  .paper { padding: 52px 60px 56px; line-height: 1.5; font-size: 13.5px; color: #000; background: var(--card);
+    -webkit-font-smoothing: antialiased; font-variant-ligatures: none; }
+  .paper h1 { font-size: 26px; font-weight: 700; margin: 0 0 5px; line-height: 1.15; }
+  .paper h2 { font-size: 13px; font-weight: 700; margin: 17px 0 7px; }
+  .paper h3 { font-size: 13.5px; font-weight: 700; margin: 11px 0 2px; }
+  .paper ul { margin: 3px 0 0; padding-left: 17px; }
+  .paper li { margin: 1px 0; }
+  .paper p { margin: 5px 0; }
+  .paper b { font-weight: 700; }
+  .paper h1 + p { font-size: 12px; color: #444; margin: 0 0 2px; }   /* 联系方式行 */
+  .paper h3 + p { color: #444; font-size: 12.5px; margin: 0; }        /* 职位下的补充行 */
+
+  /* 1. Jake's Resume —— 工程师圈最常见：居中大写姓名、节标题下通栏细线、极紧凑 */
+  .tpl-jake { font-family: "Charter", "Bitstream Charter", "Iowan Old Style", Georgia, serif; line-height: 1.42; }
+  .tpl-jake h1 { text-align: center; text-transform: uppercase; letter-spacing: .05em; font-size: 25px; font-weight: 700; }
+  .tpl-jake h1 + p { text-align: center; font-size: 12px; color: #000; margin-bottom: 4px; }
+  .tpl-jake h2 { text-transform: uppercase; letter-spacing: .06em; font-size: 12.5px; font-weight: 700;
+    border-bottom: 1px solid #000; padding-bottom: 2px; margin: 15px 0 5px; }
+  .tpl-jake h3 { font-size: 13px; }
+  .tpl-jake ul { padding-left: 16px; }
+
+  /* 2. Awesome-CV —— 彩色节标题 + 通栏细线，无衬线，最"现代" */
+  .tpl-awesome { font-family: "Helvetica Neue", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 13px; line-height: 1.52; --ac: #00A388; }
+  .tpl-awesome h1 { text-align: center; font-weight: 300; font-size: 32px; letter-spacing: .01em; }
+  .tpl-awesome h1 + p { text-align: center; font-size: 11.5px; color: #666; letter-spacing: .01em; margin-bottom: 6px; }
+  .tpl-awesome h2 { color: var(--ac); text-transform: uppercase; letter-spacing: .07em; font-size: 12.5px;
+    font-weight: 700; border-bottom: 1.5px solid var(--ac); padding-bottom: 3px; margin: 20px 0 8px; }
+  .tpl-awesome h3 { font-size: 13px; font-weight: 700; }
+  .tpl-awesome li::marker { color: var(--ac); }
+
+  /* 3. Harshibar —— 超大居中姓名 + 等宽联系方式 + 浅灰粗横线节标题
+     原 PDF 的图标字体（Phone-Alt/Envelope 会被抽成文字）和重复几十次的链接注释一律不还原 */
+  .tpl-harsh { font-family: "Helvetica Neue", -apple-system, Arial, sans-serif; font-size: 12.5px; line-height: 1.45; }
+  .tpl-harsh h1 { text-align: center; font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 6px; }
+  .tpl-harsh h1 + p { text-align: center; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: #000; letter-spacing: -.01em; margin-bottom: 10px; }
+  .tpl-harsh h2 { text-transform: uppercase; font-size: 13.5px; font-weight: 700; letter-spacing: .01em;
+    border-bottom: 2.5px solid #C9C9C9; padding-bottom: 3px; margin: 18px 0 7px; }
+  .tpl-harsh h3 { font-size: 13px; font-weight: 700; margin: 10px 0 1px; }
+  .tpl-harsh h3 + p { font-style: italic; color: #000; font-size: 12.5px; }
+  .tpl-harsh ul { padding-left: 16px; }
+
+  /* 4. Madrid —— 姓名右对齐、无衬线标题配衬线正文，对比强
+     原 PDF 的「左标签右值」双栏（Nacimiento / Teléfono 抽取时会和值断开）改成单行，不还原 */
+  .tpl-madrid { font-family: "Charter", "Bitstream Charter", "Iowan Old Style", Georgia, serif; line-height: 1.55; }
+  .tpl-madrid h1 { text-align: right; font-size: 31px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 1px;
+    font-family: "Helvetica Neue", Arial, sans-serif; }
+  .tpl-madrid h1 + p { text-align: right; font-style: italic; font-size: 12.5px; color: #000;
+    font-family: "Helvetica Neue", Arial, sans-serif; margin-bottom: 14px; }
+  .tpl-madrid h2 { font-family: "Helvetica Neue", Arial, sans-serif; text-transform: uppercase; font-size: 15px;
+    font-weight: 700; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 20px 0 8px; }
+  .tpl-madrid h3 { font-size: 13.5px; font-weight: 700; margin: 12px 0 0; }
+  .tpl-madrid h3 + p { font-style: italic; color: #000; }
+  .tpl-madrid ul { padding-left: 26px; margin-top: 5px; }
+  .tpl-madrid li { margin: 3px 0; }
+
+  /* 模板选择器：缩略图就是同一套模板 CSS 的等比缩小渲染 */
+  .tpl-picker { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+  .tpl-card { border: 2px solid var(--line); border-radius: var(--radius); padding: 6px; cursor: pointer;
+    background: var(--card); text-align: center; }
+  .tpl-card.active { border-color: #0A66C2; }
+  .tpl-card > span { display: block; font-size: 11px; line-height: 1.4; margin-top: 5px; color: var(--faint); }
+  .tpl-card > span b { display: block; font-size: 12.5px; color: var(--ink); }
+  .tpl-card.active > span b { color: #0A66C2; }
+  .tpl-thumb { width: 132px; height: 164px; overflow: hidden; border: 1px solid var(--line); background: #fff; }
+  .tpl-thumb .paper { width: 528px; transform: scale(.25); transform-origin: 0 0; padding: 28px 32px; pointer-events: none; }
+
+  /* ---- score cards ---- */
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
+  .score-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .score-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .score-head b { font-size: 14px; }
+  .score-num { margin-left: auto; font-size: 22px; font-weight: 700; }
+  .score-num.hi { color: var(--green); } .score-num.mid { color: var(--amber); } .score-num.lo { color: #B24020; }
+  .grade-badge { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 3px; background: rgba(0,0,0,.07); }
+  .score-card ul { margin: 4px 0 0; padding-left: 18px; font-size: 12.5px; }
+  .score-card .ded li { color: #B24020; }
+  .score-card .fix li { color: var(--muted); }
+  .score-card h5 { margin: 8px 0 2px; font-size: 12px; color: var(--faint); font-weight: 600; }
+  .check-row { display: flex; gap: 8px; align-items: baseline; font-size: 13px; margin: 4px 0; }
+  .check-pass { color: var(--green); font-weight: 700; }
+  .check-fail { color: #B24020; font-weight: 700; }
+  .gaps { margin-top: 10px; font-size: 13px; }
+  .gaps .badge { margin: 2px 4px 2px 0; display: inline-block; background: rgba(178,64,32,.08); color: #B24020; }
+  .score-summary { margin-top: 12px; font-size: 13px; font-weight: 600; }
+
+  @media (max-width: 640px) {
+    .brand span.brand-name { display: none; }
+    nav button { padding: 8px 10px 6px; }
+    .jobs-toolbar { flex-wrap: wrap; }
+    .stats { margin-left: 0; }
+    .job-row { flex-wrap: wrap; padding: 14px 16px; }
+    #preview { padding: 32px 24px; }
+    .card { padding: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media print {
+    body * { visibility: hidden; }
+    #preview, #preview * { visibility: visible; }
+    #preview { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; box-shadow: none; min-height: 0; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-mark">JH</span><span class="brand-name">JobHunter</span></div>
+    <nav>
+      <button data-tab="prefs" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>
+        求职偏好
+      </button>
+      <button data-tab="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        个人资料
+      </button>
+      <button data-tab="knowledge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5V5.5M9 8h6"/></svg>
+        知识库
+      </button>
+      <button data-tab="jobs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 12h18"/></svg>
+        职位列表
+      </button>
+      <button data-tab="gen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h6M9 16h6"/></svg>
+        生成
+      </button>
+      <button data-tab="tracked">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18l-7-4-7 4z"/><path d="M9 10l2 2 4-4"/></svg>
+        跟进中
+      </button>
+    </nav>
+  </div>
+</header>
+<main>
+
+<section id="prefs" class="active">
+  <div class="card">
+    <h2>求职偏好</h2>
+    <p class="sub">搜索 Seek 和 LinkedIn 时使用的条件</p>
+    <label>职位关键词</label><input type="text" id="p-keywords" placeholder="data analyst">
+    <label>地点</label><input type="text" id="p-location" placeholder="Sydney NSW">
+    <label>年薪下限 (AUD)</label><input type="text" id="p-salary" placeholder="100000">
+    <label>工作类型</label>
+    <select id="p-worktype"><option value="">不限</option><option value="242">全职</option><option value="244">合同/临时</option><option value="243">兼职</option></select>
+    <label>经验等级</label>
+    <div id="p-levels" style="display:flex;gap:16px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:4px;font-weight:normal"><input type="checkbox" value="intern">Intern</label>
+      <label style="display:flex;align-items:center;gap:4px;font-weight:normal"><input type="checkbox" value="junior">Junior / Graduate</label>
+      <label style="display:flex;align-items:center;gap:4px;font-weight:normal"><input type="checkbox" value="mid_senior">Mid-Senior</label>
+      <label style="display:flex;align-items:center;gap:4px;font-weight:normal"><input type="checkbox" value="director_plus">Director+</label>
+    </div>
+    <p class="sub" style="margin:4px 0 0">不勾 = 不限。LinkedIn 按官方等级过滤；Seek 按标题排除明确属于其他等级的职位，不带等级词的职位保留</p>
+    <label>排除关键词</label><input type="text" id="p-exclude" placeholder="php, wordpress">
+    <p class="sub" style="margin:4px 0 0">逗号分隔，命中职位名即忽略</p>
+    <div class="actions"><button class="btn btn-primary" onclick="savePrefs()">保存</button><span id="p-saved" class="ok"></span></div>
+  </div>
+</section>
+
+<section id="profile">
+  <div class="card">
+    <h2>个人资料</h2>
+    <p class="sub">生成与匹配的唯一事实来源。首次上传 CV 会自动解析进来；在这里改，生成立刻跟着变</p>
+    <div class="actions" style="margin:0 0 4px"><button class="btn btn-outline" id="pf-import-btn" onclick="importProfile()">从知识库的 CV 原文重新导入</button><span id="pf-import-status" class="ok"></span></div>
+    <h3>基本信息</h3>
+    <div class="pf-grid">
+      <label class="pf-field">姓名<input id="pf-name" placeholder="Zihan Wang"></label>
+      <label class="pf-field">邮箱<input id="pf-email" placeholder="you@example.com"></label>
+      <label class="pf-field">电话<input id="pf-phone" placeholder="+61 400 000 000"></label>
+      <label class="pf-field">城市<input id="pf-location" placeholder="Melbourne VIC"></label>
+      <label class="pf-field">链接<input id="pf-links" placeholder="LinkedIn / GitHub URL"></label>
+    </div>
+    <label>Professional Summary</label>
+    <textarea id="pf-summary" style="min-height:70px" placeholder="两三句话的个人总结"></textarea>
+    <h3>技能</h3>
+    <div class="sks" id="pf-skills"></div>
+    <input id="pf-skill-add" placeholder="输入技能后回车添加">
+    <h3>工作经历</h3>
+    <div id="pf-exp"></div>
+    <div class="actions" style="margin-top:8px"><button class="btn btn-outline" onclick="addExp()">+ 添加经历</button></div>
+    <h3>教育</h3>
+    <div id="pf-edu"></div>
+    <div class="actions" style="margin-top:8px"><button class="btn btn-outline" onclick="addEdu()">+ 添加教育</button></div>
+    <label>其他（证书、奖项、志愿活动等）</label>
+    <textarea id="pf-other" style="min-height:70px"></textarea>
+    <div class="actions"><button class="btn btn-primary" onclick="saveProfile()">保存</button><span id="pf-saved" class="ok"></span></div>
+  </div>
+</section>
+
+<section id="knowledge">
+  <div class="card">
+    <h2>知识库</h2>
+    <p class="sub">生成定制文档时的事实来源与风格样本，只需填一次</p>
+    <label>CV 原文（备份 / 导入源）</label>
+    <p class="sub" style="margin:0 0 6px">首次上传会自动解析进个人资料页；之后生成以个人资料为准，这里只作备份和重新导入的来源。</p>
+    <textarea id="k-cv_master" placeholder="粘贴你的完整履历，或上传文件。"></textarea>
+    <input type="file" class="k-file" accept=".pdf,.docx,.txt,.md" onchange="uploadKnowledge('cv_master', this)">
+    <label>补充经历与技能</label>
+    <p class="sub" style="margin:0 0 6px">在生成页勾选"我其实会但漏写了"的技能时会自动追加到这里，也可以直接改。同样算事实来源——只写真做过的。</p>
+    <textarea id="k-cv_extra" style="min-height:100px" placeholder="例如：2024 年在 XX 项目用 Docker 打包了 3 个服务并部署到 AKS。"></textarea>
+    <label>Cover letter 范文</label>
+    <textarea id="k-cl_sample" placeholder="粘贴一篇你满意的 cover letter，或上传文件。生成时会模仿它的风格。"></textarea>
+    <input type="file" class="k-file" accept=".pdf,.docx,.txt,.md" onchange="uploadKnowledge('cl_sample', this)">
+    <label>Cover letter 格式偏好</label>
+    <textarea id="k-cl_format" style="min-height:100px" placeholder="描述你想要的语气、段落结构、称呼方式，例如：三段式，开头直呼 Hiring Manager，语气自信但不浮夸。"></textarea>
+    <div class="actions"><button class="btn btn-primary" onclick="saveKnowledge()">保存</button><span id="k-saved" class="ok"></span></div>
+  </div>
+</section>
+
+<section id="jobs">
+  <div class="card">
+    <div class="jobs-toolbar">
+      <button class="btn btn-primary" onclick="runSearch()" id="search-btn">搜索 Seek + LinkedIn</button>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="seg" id="jobs-filter"></div>
+    <div id="warnings"></div>
+  </div>
+  <div class="card job-list" id="job-list"></div>
+  <aside id="jd-panel" role="dialog" aria-label="职位描述" aria-hidden="true">
+    <div class="jd-head">
+      <button class="jd-close" id="jd-close" onclick="closeJD()" aria-label="关闭">&times;</button>
+      <h3 id="jd-title"></h3>
+      <div class="co" id="jd-co"></div>
+      <div class="loc" id="jd-loc"></div>
+      <div class="row" id="jd-meta"></div>
+    </div>
+    <div class="jd-body" id="jd-body"></div>
+  </aside>
+  <div class="card">
+    <details>
+      <summary>手动添加职位</summary>
+      <label>职位名</label><input type="text" id="m-title">
+      <label>公司</label><input type="text" id="m-company">
+      <label>链接（可选）</label><input type="text" id="m-url">
+      <label>JD 全文（可选，抓不到时粘贴）</label><textarea id="m-jd" style="min-height:100px"></textarea>
+      <div class="actions"><button class="btn btn-outline" onclick="addManual()">添加</button><span id="m-saved" class="ok"></span></div>
+    </details>
+  </div>
+</section>
+
+<section id="tracked">
+  <div class="card">
+    <h2>跟进中</h2>
+    <p class="sub">感兴趣 / 已投 / 面试中 / 已offer / 已挂 的职位留在这里，搜索条件变化时不会被清掉。备注失焦自动保存。</p>
+    <div class="stats" id="tracked-stats" style="margin-left:0"></div>
+    <div class="seg" id="tracked-filter"></div>
+  </div>
+  <div class="card job-list" id="tracked-list"></div>
+</section>
+
+<section id="gen">
+  <div class="card">
+    <h2>生成定制文档</h2>
+    <p class="sub">按 ATS/AI 筛选规则，为选中职位定制 CV 和 cover letter</p>
+    <div class="gen-controls">
+      <div class="field"><label>选择职位</label><select id="g-job"></select></div>
+      <button class="btn btn-primary" id="g-generate-btn" onclick="generate()">Generate Match Status</button>
+      <span id="g-status" class="ok"></span>
+    </div>
+    <div class="doc-toggle">
+      <button class="btn btn-outline on" id="tab-cv" onclick="showDoc('cv')">CV</button>
+      <button class="btn btn-outline" id="tab-cl" onclick="showDoc('cl')">Cover Letter</button>
+      <details class="save-menu">
+        <summary class="btn btn-ghost">保存 ▾</summary>
+        <div class="save-opts">
+          <button onclick="this.closest('details').open=false;savePdf()">PDF</button>
+          <button onclick="this.closest('details').open=false;saveWord()">Word (.doc)</button>
+        </div>
+      </details>
+    </div>
+    <div class="gap" id="gap" hidden></div>
+    <div id="verify" hidden></div>
+    <label style="margin-top:16px">排版模板</label>
+    <div class="tpl-picker" id="tpl-picker"></div>
+  </div>
+  <div id="preview" class="paper tpl-jake" contenteditable="true"></div>
+  <div class="card" style="margin-top:16px">
+    <h2>ATS 筛选评分</h2>
+    <p class="sub">模拟 Workday、iCIMS、Greenhouse、SEEK、PageUp 五个平台的打分口径，对照当前职位的 JD 评分。分数供参考，重点看扣分原因和修改建议。</p>
+    <div class="actions" style="margin-top:8px">
+      <button class="btn btn-primary" id="score-btn" onclick="scoreCV(false)">给生成的 CV 评分</button>
+      <span id="score-status" class="ok"></span>
+    </div>
+    <details style="margin-top:10px">
+      <summary>或粘贴任意简历文本评分</summary>
+      <textarea id="score-input" style="min-height:120px" placeholder="粘贴简历全文（纯文本）"></textarea>
+      <div class="actions"><button class="btn btn-outline" onclick="scoreCV(true)">评分粘贴的简历</button></div>
+    </details>
+    <div id="score-results"></div>
+  </div>
+</section>
+</main>
+
+<footer class="donate">
+  <p>开发不易，很希望自己开发的东西能帮到大家 💛 有什么建议都可以给我提～想支持我的话，可以给我买杯咖啡 ☕</p>
+  <div class="donate-codes">
+    <figure><img src="/assets/alipay.jpg" alt="支付宝收款码" loading="lazy"><figcaption>支付宝</figcaption></figure>
+    <figure><img src="/assets/wechat.jpg" alt="微信收款码" loading="lazy"><figcaption>微信支付</figcaption></figure>
+  </div>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const api = (path, opts) => fetch(path, opts).then(async r => {
+  if (!r.ok) {
+    const err = new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+    err.status = r.status;
+    throw err;
+  }
+  return r.json();
+});
+// 写请求的兜底：失败必须让用户知道，静默吞掉 = 用户以为存上了
+const must = p => p.then(() => true, e => { alert(e.message); return false; });
+// 只放行 http/https 且转义引号——抓来的 url 不能裸着进 href
+const safeUrl = u => /^https?:\/\//i.test(u || "") ? esc(u) : "";
+const noteFocused = () => document.activeElement?.classList?.contains("note");
+
+// GLM 长调用共用：状态栏走秒 + 可取消 + 11 分钟兜底超时。
+// 取消只断前端等待；服务端那次 GLM 调用会自己跑完，结果作废，无副作用。
+const glmCtls = {};
+let glmSeq = 0;
+function glmStart(el, label) {
+  const n = ++glmSeq, ctl = new AbortController();
+  glmCtls[n] = ctl;
+  const t0 = Date.now();
+  const tick = () => {
+    const s = Math.floor((Date.now() - t0) / 1000);
+    el.innerHTML = `${label} ${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}
+      <a href="#" onclick="glmCtls[${n}]?.abort();return false" style="margin-left:6px">取消</a>`;
+  };
+  tick();
+  const iv = setInterval(tick, 1000);
+  const timeout = setTimeout(() => ctl.abort(), 660000);
+  return { signal: ctl.signal,
+           done() { clearInterval(iv); clearTimeout(timeout); delete glmCtls[n]; el.textContent = ""; } };
+}
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  if (jdOpen !== null) closeJD();   // 面板会随 section 隐藏，但 body 上的挤压 padding 不清会留一条大空白
+  document.querySelectorAll("nav button, section").forEach(e => e.classList.remove("active"));
+  b.classList.add("active"); $(b.dataset.tab).classList.add("active");
+  if (b.dataset.tab === "jobs") loadJobs();
+  if (b.dataset.tab === "gen") loadJobOptions();
+  if (b.dataset.tab === "tracked") loadTracked();
+});
+
+// prefs
+async function loadPrefs() {
+  const p = JSON.parse((await api("/api/kv/prefs")).value || "{}");
+  $("p-keywords").value = p.keywords || "";
+  $("p-location").value = p.location || "";
+  $("p-salary").value = p.salary_min || "";
+  $("p-worktype").value = p.worktype || "";
+  $("p-exclude").value = p.exclude || "";
+  const lv = (p.levels || "").split(",");
+  document.querySelectorAll("#p-levels input").forEach(c => c.checked = lv.includes(c.value));
+}
+async function savePrefs() {
+  const p = { keywords: $("p-keywords").value,
+              location: $("p-location").value,
+              salary_min: $("p-salary").value,
+              worktype: $("p-worktype").value,
+              exclude: $("p-exclude").value,
+              levels: [...document.querySelectorAll("#p-levels input:checked")].map(c => c.value).join(",") };
+  if (!await must(api("/api/kv/prefs", { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ value: JSON.stringify(p) }) }))) return;
+  flash("p-saved");
+}
+
+// profile：结构化事实源。skills 实时维护在 pf.skills；其余字段保存/增删时从 DOM 收集
+const emptyProfile = () => ({ basic: {}, summary: "", skills: [], experience: [], education: [], other: "" });
+let pf = emptyProfile();
+const normalizePf = p => ({ ...emptyProfile(), ...(p || {}), basic: { ...((p || {}).basic || {}) } });
+const pfEmpty = () => !(pf.basic.name || pf.summary || pf.skills.length || pf.experience.length);
+
+async function loadProfile() {
+  let p = {};
+  try { p = JSON.parse((await api("/api/kv/profile")).value || "{}"); } catch {}
+  pf = normalizePf(p);
+  renderProfileForm();
+}
+function renderProfileForm() {
+  for (const k of ["name", "email", "phone", "location", "links"]) $("pf-" + k).value = pf.basic[k] || "";
+  $("pf-summary").value = pf.summary || "";
+  $("pf-other").value = pf.other || "";
+  renderSkills(); renderExp(); renderEdu();
+}
+function renderSkills() {
+  $("pf-skills").innerHTML = pf.skills.map((s, i) =>
+    `<span class="sk have">${esc(s)}<button type="button" class="sk-x" aria-label="删除技能 ${esc(s)}"
+      onclick="pf.skills.splice(${i},1);renderSkills()">×</button></span>`).join("");
+}
+function renderExp() {
+  $("pf-exp").innerHTML = pf.experience.map((e, i) => `<div class="pf-card">
+    <div class="pf-grid">
+      <label class="pf-field">职位<input class="e-title" placeholder="AI Engineer" value="${esc(e.title || "")}"></label>
+      <label class="pf-field">公司<input class="e-company" placeholder="Acme Pty Ltd" value="${esc(e.company || "")}"></label>
+      <label class="pf-field">地点<input class="e-location" placeholder="Sydney, Australia" value="${esc(e.location || "")}"></label>
+      <label class="pf-field">开始时间<input class="e-start" placeholder="Jul 2023" value="${esc(e.start || "")}"></label>
+      <label class="pf-field">结束时间<input class="e-end" placeholder="Present" value="${esc(e.end || "")}"></label>
+    </div>
+    <label class="pf-field">职责与成果（一行一条）<textarea class="e-bullets" placeholder="Built 12 Power BI dashboards used by 300+ staff">${esc((e.bullets || []).join("\n"))}</textarea></label>
+    <div class="actions"><button class="btn btn-ghost" onclick="delExp(${i})">删除这段经历</button></div>
+  </div>`).join("");
+}
+function renderEdu() {
+  $("pf-edu").innerHTML = pf.education.map((e, i) => `<div class="pf-card">
+    <div class="pf-grid">
+      <label class="pf-field">学历与专业<input class="d-degree" placeholder="Master of Computer Science" value="${esc(e.degree || "")}"></label>
+      <label class="pf-field">学校<input class="d-school" placeholder="University of Melbourne" value="${esc(e.school || "")}"></label>
+      <label class="pf-field">毕业年份<input class="d-year" placeholder="2024" value="${esc(e.year || "")}"></label>
+    </div>
+    <div class="actions"><button class="btn btn-ghost" onclick="delEdu(${i})">删除</button></div>
+  </div>`).join("");
+}
+function collectProfile() {
+  for (const k of ["name", "email", "phone", "location", "links"]) pf.basic[k] = $("pf-" + k).value.trim();
+  pf.summary = $("pf-summary").value.trim();
+  pf.other = $("pf-other").value.trim();
+  pf.experience = [...document.querySelectorAll("#pf-exp .pf-card")].map(c => ({
+    title: c.querySelector(".e-title").value.trim(), company: c.querySelector(".e-company").value.trim(),
+    location: c.querySelector(".e-location").value.trim(), start: c.querySelector(".e-start").value.trim(),
+    end: c.querySelector(".e-end").value.trim(),
+    bullets: c.querySelector(".e-bullets").value.split("\n").map(s => s.trim()).filter(Boolean),
+  })).filter(e => e.title || e.company || e.bullets.length);
+  pf.education = [...document.querySelectorAll("#pf-edu .pf-card")].map(c => ({
+    degree: c.querySelector(".d-degree").value.trim(), school: c.querySelector(".d-school").value.trim(),
+    year: c.querySelector(".d-year").value.trim(),
+  })).filter(e => e.degree || e.school);
+}
+async function saveProfile() {
+  collectProfile();
+  if (!await must(api("/api/kv/profile", { method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ value: JSON.stringify(pf) }) }))) return;
+  renderProfileForm();
+  flash("pf-saved");
+}
+function addExp() { collectProfile(); pf.experience.push({}); renderExp(); }
+function delExp(i) { collectProfile(); pf.experience.splice(i, 1); renderExp(); }
+function addEdu() { collectProfile(); pf.education.push({}); renderEdu(); }
+function delEdu(i) { collectProfile(); pf.education.splice(i, 1); renderEdu(); }
+$("pf-skill-add").addEventListener("keydown", e => {
+  // isComposing：中文输入法选字的回车只是上屏，不是提交——不判会把没打完的拼音串加成技能
+  if (e.key !== "Enter" || e.isComposing) return;
+  e.preventDefault();
+  const v = e.target.value.trim();
+  if (v && !pf.skills.includes(v)) { pf.skills.push(v); renderSkills(); }
+  e.target.value = "";
+});
+async function importProfile(text) {
+  if (!pfEmpty() && !confirm("会覆盖当前个人资料的全部内容，继续吗？")) return;
+  $("pf-import-btn").disabled = true;
+  const t = glmStart($("pf-import-status"), "解析中（约 2-3 分钟，别关页面）");
+  try {
+    const p = await api("/api/profile/from_cv", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(text ? { text } : {}),
+      signal: t.signal });
+    pf = normalizePf(p);
+    renderProfileForm();
+    t.done();
+    $("pf-import-status").textContent = "已导入并保存 ✓";
+  } catch (e) {
+    t.done();
+    if (e.name === "AbortError") $("pf-import-status").textContent = "已取消";
+    else alert(e.message);
+  }
+  $("pf-import-btn").disabled = false;
+}
+
+// knowledge
+const KNOWLEDGE_KEYS = ["cv_master","cv_extra","cl_sample","cl_format"];
+async function loadKnowledge() {
+  for (const k of KNOWLEDGE_KEYS)
+    $("k-" + k).value = (await api("/api/kv/" + k)).value;
+}
+async function uploadKnowledge(key, input) {
+  const f = input.files[0];
+  if (!f) return;
+  const st = $("k-saved");
+  st.textContent = `解析 ${f.name}…`;
+  try {
+    // 直接把 File 当 body 发，省掉 multipart 和 python-multipart 依赖
+    const r = await api("/api/extract?name=" + encodeURIComponent(f.name), { method: "POST", body: f });
+    $("k-" + key).value = r.text;
+    st.textContent = `已读取 ${r.chars} 字，请核对后点保存`;
+    if (key === "cv_master" && pfEmpty()) {
+      // 首次上传 CV：自动解析进 Profile（此后 Profile 是事实源，这里只是备份）
+      st.textContent = `已读取 ${r.chars} 字，正在解析进个人资料（约 2-3 分钟，别关页面）…`;
+      try {
+        const p = await api("/api/profile/from_cv", { method: "POST",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: r.text }) });
+        pf = normalizePf(p);
+        renderProfileForm();
+        st.textContent = `已读取 ${r.chars} 字并解析进个人资料 ✓，去个人资料页核对一下`;
+      } catch (e) { st.textContent = `已读取 ${r.chars} 字（个人资料解析失败：${e.message}）`; }
+    }
+  } catch (e) { st.textContent = ""; alert(e.message); }
+  input.value = "";
+}
+async function saveKnowledge() {
+  for (const k of KNOWLEDGE_KEYS)
+    if (!await must(api("/api/kv/" + k, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ value: $("k-" + k).value }) }))) return;
+  flash("k-saved");
+}
+function flash(id, text = "已保存 ✓") { $(id).textContent = text; setTimeout(() => $(id).textContent = "", 2000); }
+
+// jobs
+const STATUSES = { new: "新", interested: "感兴趣", applied: "已投",
+                   interviewing: "面试中", offer: "已offer", rejected: "已挂", ignored: "忽略" };
+// 这几个搜索条件变化时不会被清掉，和服务端 KEEP_ON_CLEAR 一致
+const TRACKED = ["interested", "applied", "interviewing", "offer", "rejected"];
+const SOURCES = { seek: "Seek", linkedin: "LinkedIn", manual: "手动" };
+let jobsById = {};
+const EMPTY_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 12h18"/></svg>`;
+let allJobs = [];
+// 主列表筛选：默认「活跃」把已忽略的藏起来，长列表不再全铺开
+const JOB_FILTERS = [
+  ["active", "活跃", j => j.status !== "ignored"],
+  ["new", "新", j => j.status === "new"],
+  ["tracked", "跟进中", j => TRACKED.includes(j.status)],
+  ["ignored", "已忽略", j => j.status === "ignored"],
+  ["all", "全部", () => true],
+];
+let jobFilter = "active";
+async function loadJobs() {
+  allJobs = await api("/api/jobs");
+  jobsById = Object.fromEntries(allJobs.map(j => [j.id, j]));
+  renderStats();
+  renderJobFilter();
+  renderJobList();
+}
+function renderStats() {
+  const count = s => allJobs.filter(j => j.status === s).length;
+  $("stats").innerHTML = `
+    <div class="stat"><b>${allJobs.length}</b><span>职位</span></div>
+    <div class="stat st-interested"><b>${count("interested")}</b><span>感兴趣</span></div>
+    <div class="stat st-applied"><b>${count("applied")}</b><span>已投</span></div>`;
+}
+
+function renderJobFilter() {
+  $("jobs-filter").innerHTML = JOB_FILTERS.map(([v, label, fn]) =>
+    `<button class="${v === jobFilter ? "on" : ""}" aria-pressed="${v === jobFilter}"
+      onclick="jobFilter='${v}';renderJobFilter();renderJobList()">${label} <span>${allJobs.filter(fn).length}</span></button>`).join("");
+}
+function renderJobList() {
+  const fn = JOB_FILTERS.find(([v]) => v === jobFilter)[2];
+  const rows = allJobs.filter(fn);
+  $("job-list").innerHTML = rows.length
+    ? rows.map(j => jobRow(j)).join("")
+    : `<div class="empty">${EMPTY_ICON}<div>${allJobs.length
+        ? "这个筛选下没有职位"
+        : "还没有职位 — 保存偏好后点上方「搜索」"}</div></div>`;
+}
+
+function jobRow(j, meta = "") {
+   const u = safeUrl(j.url);
+   return `<div class="job-row">
+     <div class="job-main">
+       ${u ? `<a class="job-title" href="${u}" target="_blank" rel="noopener">${esc(j.title)}</a>` : `<span class="job-title">${esc(j.title)}</span>`}
+       <div class="job-company">${esc(j.company)}</div>
+       ${j.location ? `<div class="job-location">${esc(j.location)}</div>` : ""}
+       <div class="job-meta">
+         <span class="badge badge-${j.source}">${SOURCES[j.source] || j.source}</span>
+         ${meta || (j.listed_at ? `<span>${j.listed_at}</span>` : "")}
+         <button class="btn btn-ghost jd-btn" onclick="toggleJD(${j.id}, this)">JD</button>
+         ${j.jd_len ? "" : `<button class="btn btn-ghost jd-btn" onclick="pasteJD(${j.id})">贴 JD</button>`}
+         ${skillChip(j)}
+       </div>
+       ${skillDetail(j)}
+       ${TRACKED.includes(j.status) || j.notes ? `<textarea class="note ${j.notes ? "filled" : ""}"
+         placeholder="备注：面试时间、几面挂的、面试官反馈…"
+         onblur="saveNote(${j.id}, this)">${esc(j.notes || "")}</textarea>` : ""}
+     </div>
+     <div style="display:flex; gap:8px; align-items:center;">
+       <select class="status-select ${j.status}" onchange="setStatus(${j.id}, this.value, true); this.className='status-select '+this.value">
+         ${Object.entries(STATUSES).map(([v,t]) => `<option value="${v}" ${v===j.status?"selected":""}>${t}</option>`).join("")}
+       </select>
+       <button class="btn btn-ghost" style="color:#B24020" onclick="deleteJob(${j.id}, this)" title="删除这条职位">🗑</button>
+     </div>
+   </div>`;
+}
+
+// 技能匹配：服务端已经把 JD 里点到的技能分好了，前端只管折叠展开。
+// 没 JD（没抓过）或知识库空的时候服务端不给 have/miss，这里就整个不显示
+function skillChip(j) {
+  if (!j.have) return "";
+  const total = j.have.length + j.miss.length;
+  if (!total) return "";
+  return `<button class="sk-chip ${j.have.length * 2 < total ? "lo" : ""}" onclick="toggleSkills(this)"
+    title="点开看具体哪些符合">技能 <b>${j.have.length}</b>/${total}</button>`;
+}
+function skillDetail(j) {
+  if (!j.have || !(j.have.length + j.miss.length)) return "";
+  const group = (label, list, cls) => list.length
+    ? `<div class="lbl">${label}</div><div class="sks">${list.map(s => `<span class="sk ${cls}">${esc(s)}</span>`).join("")}</div>`
+    : "";
+  return `<div class="sk-detail" hidden>${group("履历里有", j.have, "have") + group("履历里没有", j.miss, "miss")}</div>`;
+}
+// 不用 id：同一条职位可能同时渲染在职位列表和跟进列表里，id 会撞
+function toggleSkills(btn) {
+  const d = btn.closest(".job-main").querySelector(".sk-detail");
+  d.hidden = !d.hidden;
+}
+
+// 跟进中：搜索条件变化时不会被清掉的那几类
+let tracked = [], trackFilter = "all";
+async function loadTracked() {
+  tracked = (await api("/api/jobs")).filter(j => TRACKED.includes(j.status));
+  jobsById = { ...jobsById, ...Object.fromEntries(tracked.map(j => [j.id, j])) };
+  // 投过的按投递日期倒序排在前面，没投过的按加入顺序倒序
+  tracked.sort((a, b) => (b.applied_at || "").localeCompare(a.applied_at || "") || b.id - a.id);
+  const week = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10);
+  const n = s => tracked.filter(j => j.status === s).length;
+  $("tracked-stats").innerHTML = `
+    <div class="stat"><b>${tracked.length}</b><span>跟进中</span></div>
+    <div class="stat st-interviewing"><b>${n("interviewing")}</b><span>面试中</span></div>
+    <div class="stat st-offer"><b>${n("offer")}</b><span>已offer</span></div>
+    <div class="stat"><b>${tracked.filter(j => (j.applied_at || "") >= week).length}</b><span>近 7 天投递</span></div>`;
+  $("tracked-filter").innerHTML = [["all", "全部", tracked.length],
+      ...TRACKED.map(s => [s, STATUSES[s], n(s)])]
+    .map(([v, label, c]) => `<button class="${v === trackFilter ? "on" : ""}" onclick="setTrackFilter('${v}')"
+      aria-pressed="${v === trackFilter}">${label} <span>${c}</span></button>`).join("");
+  renderTracked();
+}
+function setTrackFilter(v) { trackFilter = v; loadTracked(); }
+function renderTracked() {
+  const rows = tracked.filter(j => trackFilter === "all" || j.status === trackFilter);
+  $("tracked-list").innerHTML = rows.length
+    ? rows.map(j => jobRow(j, (j.applied_at
+        ? `<span>投于 ${j.applied_at}</span>`
+        : (j.listed_at ? `<span>${j.listed_at} 挂出</span>` : "")) +
+        (j.generated ? `<span class="ok" style="font-size:12px">已生成文档</span>` : ""))).join("")
+    : `<div class="empty">${EMPTY_ICON}<div>${trackFilter === "all"
+        ? "这里还是空的 — 在职位列表把状态改成「感兴趣」或「已投」"
+        : "没有" + STATUSES[trackFilter] + "的职位"}</div></div>`;
+}
+
+
+async function runSearch() {
+  $("search-btn").disabled = true; $("search-btn").textContent = "搜索中…";
+  try {
+    let r;
+    try {
+      r = await api("/api/search", { method: "POST" });
+    } catch (e) {
+      // 409 = 搜索条件变了，清空前先问一次
+      if (e.status !== 409 || !confirm(e.message + "\n\n继续吗？")) throw e;
+      r = await api("/api/search?confirm=true", { method: "POST" });
+    }
+    $("warnings").innerHTML = [
+      `<div class="warn">本次新增 ${r.added} 条职位${r.cleared ? `，清掉 ${r.cleared} 条旧结果` : ""}</div>`,
+      ...r.warnings.map(w => `<div class="warn">${esc(w)}</div>`),
+    ].join("");
+    await loadJobs();
+  } catch (e) { if (e.status !== 409) alert(e.message); }
+  $("search-btn").disabled = false; $("search-btn").textContent = "搜索 Seek + LinkedIn";
+}
+// 点「JD」才去抓那一条，抓过服务端就存下了，再点直接出
+const jdCache = {};
+let jdOpen = null, jdTrigger = null;
+
+// 抓来的 JD 是一行一条，把项目符号还原成列表，其余按段落排——比 pre-wrap 好读得多
+function jdHtml(text) {
+  let html = "", inList = false;
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const bullet = /^[•·▪◦\-*–]\s+/.test(line);
+    if (bullet !== inList) { html += inList ? "</ul>" : "<ul>"; inList = bullet; }
+    html += bullet ? `<li>${esc(line.replace(/^[•·▪◦\-*–]\s+/, ""))}</li>` : `<p>${esc(line)}</p>`;
+  }
+  return html + (inList ? "</ul>" : "");
+}
+
+async function toggleJD(id, btn) {
+  if (jdOpen === id) return closeJD();
+  const j = jobsById[id];
+  jdOpen = id; jdTrigger = btn;
+  $("jd-title").textContent = j.title;
+  $("jd-co").textContent = j.company;
+  $("jd-loc").textContent = j.location || "";
+  const u = safeUrl(j.url);
+  $("jd-meta").innerHTML =
+    `<span class="badge badge-${j.source}">${SOURCES[j.source] || j.source}</span>` +
+    (j.listed_at ? `<span>${j.listed_at}</span>` : "") +
+    (u ? `<a href="${u}" target="_blank" rel="noopener">打开原帖 ↗</a>` : "");
+  $("jd-body").innerHTML = jdCache[id] !== undefined
+    ? jdHtml(jdCache[id]) : `<p class="loading">正在抓取 JD…</p>`;
+  $("jd-panel").classList.add("open");
+  $("jd-panel").setAttribute("aria-hidden", "false");
+  document.body.classList.add("jd-open");
+  $("jd-close").focus();
+  document.querySelectorAll(".jd-btn").forEach(b => b.classList.toggle("open", b === btn));
+
+  if (jdCache[id] === undefined) {
+    try { jdCache[id] = (await api(`/api/jobs/${id}/jd`)).jd; } catch { jdCache[id] = ""; }
+    if (jdOpen !== id) return;                 // 抓的过程里用户已经点了别处
+    $("jd-body").innerHTML = jdCache[id]
+      ? jdHtml(jdCache[id])
+      : `<p class="loading">这条抓不到 JD。</p>
+         <div class="actions"><button class="btn btn-outline" onclick="pasteJD(${id})">粘贴 JD 原文</button></div>`;
+    if (jobsById[id]) jobsById[id].jd_len = (jdCache[id] || "").length;
+    // 正在输入备注时不整表重渲染——会把没保存的输入直接销毁；失焦的都已在 blur 时保存过
+    if (!noteFocused()) loadJobs();
+  }
+}
+
+function closeJD() {
+  jdOpen = null;
+  $("jd-panel").classList.remove("open");
+  $("jd-panel").setAttribute("aria-hidden", "true");
+  document.body.classList.remove("jd-open");
+  document.querySelectorAll(".jd-btn.open").forEach(b => b.classList.remove("open"));
+  if (jdTrigger && document.contains(jdTrigger)) jdTrigger.focus();
+  jdTrigger = null;
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && jdOpen !== null) closeJD(); });
+// 「保存 ▾」菜单点外部收起
+document.addEventListener("click", e => {
+  const m = document.querySelector(".save-menu[open]");
+  if (m && !m.contains(e.target)) m.open = false;
+});
+// 备注失焦时才存，没改动不发请求；失败弹错误并保留输入
+async function saveNote(id, el) {
+  const notes = el.value.trim();
+  if (notes === (jobsById[id]?.notes || "")) return;
+  if (!await must(api(`/api/jobs/${id}`, { method: "PATCH", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ notes }) }))) return;
+  if (jobsById[id]) jobsById[id].notes = notes;
+  el.classList.toggle("filled", !!notes);
+}
+async function setStatus(id, status, refresh) {
+  if (!await must(api(`/api/jobs/${id}`, { method: "PATCH", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ status }) }))) {
+    // 失败时按服务端真实状态把界面拉回来，别让下拉停在没存上的值
+    $("tracked").classList.contains("active") ? loadTracked() : loadJobs();
+    return;
+  }
+  if (jobsById[id]) jobsById[id].status = status;
+  const aj = allJobs.find(j => j.id === id);
+  if (aj) aj.status = status;
+  // 在已投递页把状态改掉，这条就该从列表里消失
+  if (refresh && $("tracked").classList.contains("active")) loadTracked();
+  else if ($("jobs").classList.contains("active")) {
+    renderStats(); renderJobFilter();
+    if (!noteFocused()) renderJobList();
+  }
+}
+// 删除职位：从 jobs 和 generations 表中删除
+async function deleteJob(id, btn) {
+   const job = jobsById[id];
+   if (!job) return;
+   if (!confirm(`确定要删除「${job.title}」@ ${job.company} 吗？`)) return;
+   try {
+       await api(`/api/jobs/${id}`, { method: "DELETE" });
+       // 从缓存中移除
+       delete jobsById[id];
+       allJobs = allJobs.filter(j => j.id !== id);
+       // 刷新当前视图
+       if ($("jobs").classList.contains("active")) {
+           renderStats();
+           renderJobFilter();
+           renderJobList();
+       } else if ($("tracked").classList.contains("active")) {
+           loadTracked();
+       }
+       flash("m-saved", "已删除 ✓");
+   } catch (e) {
+       alert(`删除失败: ${e.message}`);
+   }
+}
+
+// 贴 JD：复用右侧面板放一个大文本域，不再用只有一行的 prompt() 弹窗
+function pasteJD(id) {
+   const j = jobsById[id];
+   if (!j) return;
+   jdOpen = id; jdTrigger = document.activeElement;
+   $("jd-title").textContent = j.title;
+   $("jd-co").textContent = j.company;
+   $("jd-loc").textContent = j.location || "";
+   $("jd-meta").innerHTML = "";
+   $("jd-body").innerHTML = `<p class="loading">把 JD 原文粘贴进来（会存下来用于匹配和生成）：</p>
+     <textarea id="jd-paste" style="min-height:220px"></textarea>
+     <div class="actions"><button class="btn btn-primary" onclick="savePastedJD(${id})">保存 JD</button></div>`;
+   $("jd-panel").classList.add("open");
+   $("jd-panel").setAttribute("aria-hidden", "false");
+   document.body.classList.add("jd-open");
+   $("jd-paste").focus();
+}
+async function savePastedJD(id) {
+  const jd = $("jd-paste").value.trim();
+  if (!jd) return alert("JD 还是空的");
+  if (!await must(api(`/api/jobs/${id}`, { method: "PATCH", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ jd }) }))) return;
+  jdCache[id] = jd;
+  if (jobsById[id]) jobsById[id].jd_len = jd.length;
+  $("jd-body").innerHTML = jdHtml(jd);
+  if (!noteFocused()) loadJobs();
+}
+async function addManual() {
+  try {
+    await api("/api/jobs", { method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ title: $("m-title").value, company: $("m-company").value, url: $("m-url").value, jd: $("m-jd").value }) });
+    for (const id of ["m-title", "m-company", "m-url", "m-jd"]) $(id).value = "";
+    flash("m-saved", "已添加 ✓");
+    loadJobs();
+  } catch (e) { alert(e.message); }
+}
+
+// generation
+// docs 存的是「渲染后的 HTML」（含用户在预览里的手改）——切换/导出/评分共用这一份，手改不再丢
+let docs = { cv: "", cl: "" };
+let activeDoc = "cv";
+function curJob() {
+  const id = $("g-job").value;
+  if (!id) alert("还没有可选职位——先去「职位列表」搜索或手动添加，再回来生成");
+  return id;
+}
+// GLM 在跑时锁住职位下拉：1-2 分钟里换目标没有意义，锁住就杜绝了"结果安到别的职位头上"
+function lockGen(on) { $("g-generate-btn").disabled = on; $("g-job").disabled = on; }
+
+async function loadJobOptions() {
+  // "g-job" is the job dropdown list
+  const prev = $("g-job").value;
+  const jobs = await api("/api/jobs");
+  jobsById = { ...jobsById, ...Object.fromEntries(jobs.map(j => [j.id, j])) };
+  $("g-job").innerHTML =
+          jobs.
+          filter(j => j.status !== "ignored").
+          map(j => `<option value="${j.id}">${esc(j.title)} — ${esc(j.company)}${j.generated ? " ✓已生成" : ""}</option>`).
+          join("");
+  // 保留原选中项：切标签回来不能悄悄跳到别的职位
+  if (prev && [...$("g-job").options].some(o => o.value === prev)) $("g-job").value = prev;
+  if ($("g-job").value !== prev) {
+    docs = { cv: "", cl: "" }; $("preview").innerHTML = ""; $("verify").hidden = true;
+    $("gap").hidden = true; lastExtraOnce = "";
+  }
+}
+
+async function generate() {
+  // 生成前预检：本地词表比对 JD 与知识库，先看匹配度、补缺口，确认后才跑 GLM
+  if (!curJob()) return;
+  lockGen(true); $("g-status").textContent = "分析匹配度…";
+  try {
+    const r = await api(`/api/jobs/${$("g-job").value}/match`);
+    $("g-status").textContent = "";
+    renderMatch(r);
+  } catch (e) { $("g-status").textContent = ""; alert(e.message); }
+  lockGen(false);
+}
+
+let lastExtraOnce = "";   // 「重新生成」要复用同一批已采纳的起草，换职位时清空
+
+async function runGenerate(extra, extraOnce) {
+  if (!curJob()) return;
+  if (extraOnce !== undefined) lastExtraOnce = extraOnce;
+  $("gap").hidden = true;
+  lockGen(true);
+  const t = glmStart($("g-status"), "生成中（一般 1-2 分钟）");
+  try {
+    const r = await api(`/api/jobs/${$("g-job").value}/generate`,
+      { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ extra: extra || "", extra_once: lastExtraOnce }), signal: t.signal });
+    docs = normalize(r);
+    if (extra) loadKnowledge();          // 补充的经历已经并进知识库了，把那一栏刷新出来
+    await showDoc("cv");
+    t.done(); $("g-status").textContent = "完成 ✓";
+  } catch (e) {
+    t.done();
+    if (e.name === "AbortError") $("g-status").textContent = "已取消";
+    else alert(e.message);
+  }
+  lockGen(false);
+}
+function normalize(r) {
+  renderVerify(r);
+  return {
+    cv: r.cv ? md(r.cv, true) : "",
+    cl: r.cover_letter ? md(r.cover_letter, false) : ""
+  };
+}
+// 手改回流：把预览当前文档的编辑内容写回缓存，切换/导出/评分才拿得到
+// function syncPreview() {
+//   if (docs[activeDoc]) docs[activeDoc] = $("preview").innerHTML;
+// }
+// 渲染 HTML 还原成 markdown 风格纯文本：# 标题、- 列表按行保留，评分器和本地检查都按行认
+function previewText() {
+  return [...$("preview").children].flatMap(el => {
+    if (el.tagName === "UL") return [...el.querySelectorAll("li")].map(li => "- " + li.innerText.trim());
+    const t = el.innerText.trim();
+    if (!t) return [];
+    const h = { H1: "# ", H2: "## ", H3: "### " }[el.tagName];
+    return [(h || "") + t];
+  }).join("\n");
+}
+// Word 保存：#preview 的 HTML（含用户手改）包上 Word 能识别的样式存成 .doc。
+// ponytail: HTML 伪装 .doc 是零依赖的老办法，Word/Pages/Google Docs 都能开；要真 .docx 再上 python-docx
+function saveWord() {
+  if (!docs[activeDoc]) return alert("当前预览没有可保存的文档");
+  //syncPreview();
+  // xml 头强制 Word 用「页面视图」打开（否则进无边距的 Web 版式）；@page Section1 定义 A4 + 页边距
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+  <head><meta charset="utf-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><style>
+    @page Section1 { size: 21cm 29.7cm; margin: 1.8cm 1.8cm; mso-header-margin: 0; mso-footer-margin: 0; }
+    div.Section1 { page: Section1; }
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.35; margin: 1.8cm; }
+    h1, h2, h3 { font-family: Calibri, Arial, sans-serif; color: #000; }
+    h1 { font-size: 20pt; margin: 0 0 4pt; } h2 { font-size: 13pt; border-bottom: 1px solid #999; margin: 14pt 0 6pt; }
+    h3 { font-size: 11.5pt; margin: 10pt 0 4pt; } p { margin: 4pt 0; }
+    ul { margin: 4pt 0 8pt 18pt; padding: 0; } li { margin: 2pt 0; }
+  </style></head><body><div class="Section1">${$("preview").innerHTML}</div></body></html>`;
+  downloadBlob(new Blob(["\ufeff" + html], { type: "application/msword" }), saveName() + ".doc");
+}
+function saveName() {
+  const which = $("tab-cv").classList.contains("on") ? "CV" : "Cover Letter";
+  const job = jobsById[$("g-job").value] || {};
+  return `${which} - ${(job.title || "job").replace(/[/\\:]/g, "-")} @ ${(job.company || "").replace(/[/\\:]/g, "-")}`;
+}
+function downloadBlob(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+async function savePdf() {
+  if (!docs[activeDoc]) return alert("\u5f53\u524d\u9884\u89c8\u6ca1\u6709\u53ef\u4fdd\u5b58\u7684\u6587\u6863");
+  //syncPreview();
+  const r = await fetch("/api/render_pdf", { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ html: $("preview").innerHTML }) });
+  if (!r.ok) return alert((await r.json().catch(() => ({}))).detail || r.statusText);
+  downloadBlob(await r.blob(), saveName() + ".pdf");
+}
+async function showDoc(which) {
+  if (!docs.cv && !docs.cl) {
+    const id = curJob();
+    if (!id) return;
+    try { docs = normalize(await api(`/api/jobs/${id}/generation`)); }
+    catch { alert("这个职位还没生成过文档"); return; }
+  }
+  //syncPreview();
+  activeDoc = which;
+  $("tab-cv").classList.toggle("on", which === "cv");
+  $("tab-cl").classList.toggle("on", which === "cl");
+  $("preview").innerHTML = docs[which]
+    || `<p style="color:#888;text-align:center;padding:100px 0">这次生成没有拆出 cover letter，重新生成一次试试</p>`;
+}
+$("g-job").onchange = () => {
+  docs = { cv: "", cl: "" }; $("preview").innerHTML = ""; $("verify").hidden = true;
+  $("gap").hidden = true; lastExtraOnce = "";
+};
+
+// 生成后校验：日期/雇主/淘汰题信息这三类"不该变的"是纯字符串比对出来的，
+// 模型申报的虚构技能单独列出来，用户可以一键换一份不虚构的
+function renderVerify(r) {
+  const checks = (r && r.checks) || [], added = (r && r.added) || [];
+  const dropped = (r && r.dropped) || {}, dSk = dropped.skills || [], dEx = dropped.experiences || [];
+  $("verify").hidden = !checks.length && !added.length && !dSk.length && !dEx.length;
+  if ($("verify").hidden) return;
+  const clean = checks.every(c => c.pass) && !added.length;   // 精简是允许的，不算脏
+  $("verify").className = "verify " + (clean ? "good" : "bad");
+
+  $("verify").innerHTML =
+    checks.map(c =>
+            `<div class="v-row ${c.pass ? "ok" : "no"}">
+                <span>${c.pass ? "✓" : "✕"}</span>
+                <b>${esc(c.name)}</b>
+                <i>${esc(c.detail)}</i>
+             </div>`).join("") +
+            (dSk.length || dEx.length ?
+                    `<div class="v-dropped">
+                        <b>为贴合 JD，这份 CV 精简掉了以下内容</b>（履历里仍保留，只是这份没写）：
+                        ${dSk.length ? `<div class="sks">${dSk.map(s => `<span class="sk">${esc(s)}</span>`).join("")}</div>` : ""}
+      ${dEx.length ? `<div>整段经历：${dEx.map(esc).join("；")}</div>` : ""}
+      想加回某项的话，直接在预览里点击编辑即可。</div>` : "") +
+    (added.length ? `<div class="v-added">
+      <b>模型违规写进了 ${added.length} 项你没勾选、履历里也没有证据的技能</b>
+      <div class="sks">${added.map(s => `<span class="sk miss">${esc(s)}</span>`).join("")}</div>
+      <p>规则要求只用你确认过的内容，这些是模型越界后自己申报出来的。点下面重新生成一份干净的。</p>
+      <button class="btn btn-outline" onclick="runGenerate('')">重新生成</button></div>` : "");
+}
+
+// 生成前的匹配度预检面板：JD 要而知识库没有的技能列出来，勾中的会写进知识库当作事实，
+// 不勾就是照实少写——这里不提供"帮你编"的选项
+function renderMatch(r) {
+  const have = r.have || [], miss = r.miss || [], total = have.length + miss.length;
+  const chip = (arr, cls) => arr.map(s => `<span class="sk ${cls}">${esc(s)}</span>`).join("");
+  $("gap").hidden = false;
+  $("gap").innerHTML =
+          `<details open>
+            <summary>Match Status：JD mentioned ${total} items，Your CV covered ${have.length} items，but miss ${miss.length} items</summary>
+            <div class="sks" style="margin:8px 0">${chip(have, "have")}${chip(miss, "miss")}</div>
+          ` +
+          (miss.length ?
+                  `<p>标红的是 JD 里有、但知识库里找不到证据的，不会写进 CV。
+                    <b>如果有你实际会、只是履历漏写的</b>，勾上——可以让 AI 按你已有的岗位经历起草一条描述，逐条审核采纳，或自己写补充说明。
+                    <b>没做过的别勾</b>：LLM 筛选层会交叉比对时间线和职责合理性，面试也一问就穿帮。
+                   </p>
+                   <div class="gap-picks">${miss.map(s => `<label><input type="checkbox" value="${esc(s)}">${esc(s)}</label>`).join("")}</div>
+                   <div class="actions" style="margin-top:10px">
+                        <button class="btn btn-outline" id="draft-btn" onclick="draftClaims()">AI drafts items based on my Resume.</button>
+                        <span id="draft-status" class="ok"></span>
+                   </div>
+                   <div id="drafts"></div>
+                   <textarea id="gap-note" placeholder="补充说明（可选）：例如 2024 年在 XX 项目用 Docker 打包 3 个服务部署到 AKS。这一栏会永久存进知识库"></textarea>
+                  ` : ""
+          ) +
+         `<div class="actions"><button class="btn btn-primary" onclick="confirmGenerate()">开始生成</button></div></details>`;
+}
+
+// AI 起草：可在真实岗位上下文里适度外推，红线（雇主/日期/学历/数字）服务端 prompt 已锁死。
+// 每条默认未采纳，✓ 才算数；采纳的只随本次生成使用，不入知识库。
+let draftSkills = [];
+
+async function draftClaims() {
+  const picked = [...$("gap").querySelectorAll(".gap-picks input:checked")].map(i => i.value);
+  if (!picked.length) return alert("Click the skills you actually have");
+  $("draft-btn").disabled = true; lockGen(true);
+  const t = glmStart($("draft-status"), "起草中（约 1 分钟）");
+  try {
+    const r =
+      await api(`/api/jobs/${$("g-job").value}/draft`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skills: picked }),
+        signal: t.signal
+      });
+    t.done();
+    draftSkills = r.drafts.map(d => d.skill);
+
+    $("drafts").innerHTML = r.drafts.map((d, i) => `
+      <div class="draft-row" id="draft-${i}">
+        <b>${esc(d.skill)}</b>
+        <textarea id="draft-text-${i}">${esc(d.text)}</textarea>
+        <div class="actions">
+          <button class="btn btn-outline" onclick="approveDraft(${i}, true)">✓ 采纳</button>
+          <button class="btn btn-ghost" onclick="approveDraft(${i}, false)">✗ 弃用</button>
+        </div>
+      </div>`).join("") +
+      `<p class="sub" style="margin:6px 0 0">可以直接改文字再点 ✓。采纳的只用于本次生成，不会存进知识库。</p>`;
+  } catch (e) {
+    t.done();
+    if (e.name === "AbortError") $("draft-status").textContent = "已取消";
+    else alert(e.message);
+  }
+  $("draft-btn").disabled = false; lockGen(false);
+}
+
+function approveDraft(i, ok) {
+  if (!ok) { $(`draft-${i}`).remove(); return; }
+  $(`draft-${i}`).classList.toggle("approved");
+}
+
+function confirmGenerate() {
+  const checked = new Set([...$("gap").querySelectorAll(".gap-picks input:checked")].map(i => i.value));
+  const approved = draftSkills
+    .map((s, i) => ({ s, el: $(`draft-${i}`), text: ($(`draft-text-${i}`)?.value || "").trim() }))
+    // 取消勾选连带作废它的起草：最终以复选框为准
+    .filter(d => d.el && d.el.classList.contains("approved") && d.text && checked.has(d.s));
+  const drafted = new Set(approved.map(d => d.s));
+  const picked = [...checked].filter(s => !drafted.has(s));    // 已采纳起草的技能不再重复入库申报
+  const note = ($("gap-note")?.value || "").trim();
+  runGenerate([picked.length ? "我还具备以下技能（原履历漏写）：" + picked.join("、") : "", note]
+    .filter(Boolean).join("\n"),
+    approved.map(d => `${d.s}: ${d.text}`).join("\n"));
+}
+
+// 模板：只换 CSS class，正文 HTML 结构不变（单栏、无表格/图标/页眉，ATS 解析不受影响）
+const TEMPLATES = {
+  jake: ["Jake's", "工程师圈最通用"],
+  awesome: ["Awesome-CV", "彩色标题，现代"],
+  harsh: ["Harshibar", "大标题，灰横线"],
+  madrid: ["Madrid", "姓名右对齐，衬线"],
+};
+const TPL_SAMPLE = `<h1>Jane Chen</h1><p>Sydney NSW | jane@example.com | 0400 000 000</p>
+<h2>Professional Summary</h2><p>Business Insights Specialist with 4 years of experience across government and banking sectors, turning complex datasets into decisions.</p>
+<h2>Skills</h2><p>Power BI, SQL, Excel, Data Analytics, Reporting, Azure, Python, Tableau</p>
+<h2>Experience</h2><h3>Data Analyst — Big4 Bank, Sydney (Jul 2023 - Present)</h3>
+<ul><li>Built <b>12</b> Power BI dashboards used by <b>300+</b> staff, cutting reporting time <b>40%</b>.</li><li>Wrote SQL pipelines processing <b>2M+</b> rows daily on Azure.</li></ul>
+<h3>Reporting Officer — NSW Government Agency (Feb 2021 - Jun 2023)</h3>
+<ul><li>Automated Excel reporting with Python, saving <b>15 hours</b> weekly.</li></ul>
+<h2>Education</h2><p>Bachelor of Commerce (Business Analytics), UNSW, 2020</p>`;
+function setTpl(name) {
+  if (!TEMPLATES[name]) name = "jake";
+  localStorage.setItem("tpl", name);
+  $("preview").className = "paper tpl-" + name;
+  document.querySelectorAll(".tpl-card").forEach(c => c.classList.toggle("active", c.dataset.tpl === name));
+}
+function renderTplPicker() {
+  const cur = localStorage.getItem("tpl") || "jake";
+  $("tpl-picker").innerHTML = Object.entries(TEMPLATES).map(([k, [name, note]]) =>
+    `<div class="tpl-card" data-tpl="${k}" onclick="setTpl('${k}')">
+      <div class="tpl-thumb"><div class="paper tpl-${k}">${TPL_SAMPLE}</div></div>
+      <span><b>${name}</b><br>${note}</span></div>`).join("");
+  setTpl(cur);
+}
+
+// ATS score
+async function scoreCV(usePasted) {
+  const id = curJob();
+  if (!id) return;
+  const body = { job_id: +id };
+  if (usePasted) {
+    body.cv_text = $("score-input").value;
+    if (!body.cv_text.trim()) return alert("先把简历文本粘贴进来");
+  } else if (docs.cv) {
+    // 评的就是眼前这份（含手改）：先切到 CV 预览，取回流后的文本
+    await showDoc("cv");
+    body.cv_text = previewText();
+  }
+  $("score-btn").disabled = true;
+  const t = glmStart($("score-status"), "评分中（约 1 分钟）");
+  try {
+    renderScore(await api("/api/score", { method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body), signal: t.signal }));
+    t.done();
+  } catch (e) {
+    t.done();
+    if (e.name === "AbortError") $("score-status").textContent = "已取消";
+    else alert(e.message);
+  }
+  $("score-btn").disabled = false;
+}
+function scoreClass(n) { return n >= 75 ? "hi" : n >= 55 ? "mid" : "lo"; }
+
+function renderScore(r) {
+
+  const cv_checks = (r.local_checks || []).map(c =>
+          `<div class="check-row">
+            <span class="${c.pass ? "check-pass" : "check-fail"}">${c.pass ? "✓" : "✗"}</span>
+            <span><b>${esc(c.name)}</b> — ${esc(c.detail)}</span>
+           </div>`).join("");
+
+  const ats_cards = (r.platforms || []).map(p =>
+          `<div class="score-card">
+            <div class="score-head"><b>${esc(p.name)}</b>
+                ${p.grade ? `<span class="grade-badge">${esc(p.grade)}</span>` : ""}
+                <span class="score-num ${scoreClass(p.score)}">${p.score}</span>
+            </div>
+            ${(p.deductions || []).length ? `<h5>扣分原因</h5><ul class="ded">${p.deductions.map(d => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
+            ${(p.fixes || []).length ? `<h5>修改建议</h5><ul class="fix">${p.fixes.map(f => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
+           </div>`).join("");
+
+  const gaps = (r.keyword_gaps || []).length ?
+          `<div class="gaps"><b>关键词缺口：</b><br>${r.keyword_gaps.map(k => `<span class="badge">${esc(k)}</span>`).join("")}</div>` : "";
+
+  $("score-results").innerHTML =
+    `
+      <div style="margin-top:14px">${cv_checks}</div>
+      <div class="score-grid">${ats_cards}</div>
+      ${gaps}
+      ${r.summary ? `<div class="score-summary">${esc(r.summary)}</div>` : ""}
+    `;
+}
+
+// minimal markdown: headers, bold, bullets, paragraphs
+function esc(s) { return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"); }
+// 兼容旧的、没有 markdown 标记的生成结果
+const SECTIONS = /^(professional summary|summary|skills|technical skills|experience|work experience|professional experience|employment history|education|certifications|projects|referees|references)\s*:?$/i;
+
+function md(t, isCv) {
+
+  if (isCv && !/^# /m.test(t)) t = t.replace(/^(.*)\n/, "# $1\n");  // 首行是姓名
+
+  return esc(t).split(/\n{2,}/).map(block => {
+    const lines = block.split("\n");
+    if (lines.every(l => /^\s*[-*] /.test(l)))
+      return "<ul>" + lines.map(l => "<li>" + inline(l.replace(/^\s*[-*] /,"")) + "</li>").join("") + "</ul>";
+    return lines.map(l => {
+      const h = l.match(/^(#{1,3}) (.*)/);
+      if (h) return `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
+      if (SECTIONS.test(l.trim())) return `<h2>${inline(l.trim())}</h2>`;
+      if (/^\s*[-*] /.test(l)) return "<ul><li>" + inline(l.replace(/^\s*[-*] /,"")) + "</li></ul>";
+      return `<p>${inline(l)}</p>`;
+    }).join("");
+  }).join("");
+  function inline(s) { return s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>"); }
+}
+
+loadPrefs(); loadKnowledge(); loadProfile(); renderTplPicker();
+</script>
+</body>
+</html>

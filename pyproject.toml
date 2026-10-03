@@ -1,0 +1,17 @@
+[project]
+name = "JobHunter"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "fastapi>=0.141.1",
+    "fpdf2>=2.8.8",
+    "httpx>=0.28.1",
+    "openai>=3.13.0",
+    "pdfminer-six>=20260107",
+    "pytest>=9.1.1",
+    "python-dotenv>=1.2.3",
+    "uvicorn>=0.52.4",
+]

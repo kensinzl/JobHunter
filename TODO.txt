@@ -1,0 +1,12 @@
+- familiar the AI generate for your missing - Done
+- familiar the generate cl and cv which should outstanding show at the dropdown list - Done
+
+- fix why cv generate later can not show, within normalnize - Done
+
+- familiar the CV and Cover Letter button - Done
+
+- save button - Done
+- Optimize the Seek and Linkined search API - Done
+- Add the remove to the fetched Job - Done
+- FastAPI Cloud
+- User and Admin Login
